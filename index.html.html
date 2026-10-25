@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBT Bioteknologi - Anti-Contek</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Jumpscare Animation */
+        @keyframes flashRed {
+            0% { background-color: #000; }
+            50% { background-color: #8b0000; }
+            100% { background-color: #000; }
+        }
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+        .jumpscare-bg {
+            animation: flashRed 0.2s infinite;
+        }
+        .jumpscare-img {
+            animation: shake 0.1s infinite;
+            filter: drop-shadow(0 0 20px red);
+        }
+        
+        /* Custom Scrollbar for matching test */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 h-screen w-screen overflow-hidden flex flex-col">
+
+    <!-- MAIN CONTAINER -->
+    <div id="app" class="w-full h-full flex flex-col relative"></div>
+
+    <script>
+        // --- DATA SOAL BANK (Bioteknologi Konvensional) ---
+        const bankSoalPG = [
+            { q: "Mikroorganisme yang berperan dalam pembuatan tempe adalah...", options: ["Rhizopus oligosporus", "Saccharomyces cerevisiae", "Lactobacillus bulgaricus", "Acetobacter xylinum"], ans: "Rhizopus oligosporus" },
+            { q: "Bakteri Acetobacter xylinum dimanfaatkan untuk membuat...", options: ["Nata de coco", "Keju", "Yoghurt", "Kecap"], ans: "Nata de coco" },
+            { q: "Proses pembuatan yoghurt dibantu oleh bakteri...", options: ["Lactobacillus bulgaricus", "Streptococcus lactis", "Aspergillus wentii", "Neurospora sitophila"], ans: "Lactobacillus bulgaricus" },
+            { q: "Jamur Saccharomyces cerevisiae sangat penting dalam pembuatan...", options: ["Roti dan Tape", "Tempe dan Oncom", "Kecap dan Tauco", "Keju dan Mentega"], ans: "Roti dan Tape" },
+            { q: "Mikroba yang digunakan untuk mengubah kedelai menjadi kecap adalah...", options: ["Aspergillus wentii", "Rhizopus oryzae", "Penicillium camemberti", "Acetobacter aceti"], ans: "Aspergillus wentii" },
+            { q: "Ciri utama dari bioteknologi konvensional adalah...", options: ["Menggunakan mikroorganisme secara langsung", "Melibatkan rekayasa genetika", "Memerlukan teknologi canggih dan steril", "Menggabungkan DNA dari spesies berbeda"], ans: "Menggunakan mikroorganisme secara langsung" },
+            { q: "Pembuatan minuman beralkohol tradisional memanfaatkan proses...", options: ["Fermentasi", "Pasteurisasi", "Sterilisasi", "Destilasi"], ans: "Fermentasi" },
+            { q: "Oncom merah khas Jawa Barat dibuat dengan bantuan jamur...", options: ["Neurospora sitophila", "Rhizopus stolonifer", "Aspergillus flavus", "Penicillium notatum"], ans: "Neurospora sitophila" },
+            { q: "Zat yang dihasilkan oleh ragi (Saccharomyces) yang membuat adonan roti mengembang adalah...", options: ["Gas Karbon dioksida (CO2)", "Asam laktat", "Alkohol", "Oksigen (O2)"], ans: "Gas Karbon dioksida (CO2)" },
+            { q: "Pembuatan mentega dibantu oleh mikroorganisme...", options: ["Streptococcus lactis", "Lactobacillus casei", "Acetobacter xylinum", "Rhizopus oligosporus"], ans: "Streptococcus lactis" },
+            { q: "Produk bioteknologi konvensional yang berasal dari susu adalah...", options: ["Keju dan Yoghurt", "Tempe dan Tahu", "Kecap dan Tauco", "Tape dan Nata de coco"], ans: "Keju dan Yoghurt" },
+            { q: "Bahan dasar pembuatan nata de coco adalah...", options: ["Air kelapa", "Susu kedelai", "Sari buah", "Singkong"], ans: "Air kelapa" }
+        ];
+
+        const soalUraianBank = [
+            "Jelaskan secara singkat perbedaan antara bioteknologi konvensional dan bioteknologi modern!",
+            "Sebutkan 3 contoh produk bioteknologi konvensional beserta mikroorganisme yang berperan dalam pembuatannya!",
+            "Jelaskan peran ragi (Saccharomyces cerevisiae) dalam proses pembuatan tape singkong!"
+        ];
+
+        const soalMenjodohkanBank = {
+            q: "Pasangkan produk bioteknologi berikut dengan mikroorganisme yang tepat!",
+            items: ["Tempe", "Yoghurt", "Kecap", "Nata de coco"],
+            options: ["Rhizopus oligosporus", "Lactobacillus bulgaricus", "Aspergillus wentii", "Acetobacter xylinum", "Saccharomyces cerevisiae"]
+        };
+
+        // --- STATE MANAGEMENT ---
+        let state = {
+            view: 'home', // home, teacher, student_login, student_dashboard, exam, cheated, result
+            activeQuestions: [],
+            answers: {},
+            currentIndex: 0,
+            timeRemaining: 3600, // 60 minutes in seconds
+            timerInterval: null,
+            audioCtx: null,
+            alarmOscillators: [],
+            examStarted: false,
+            // Data Identitas & Pelanggaran
+            studentName: '',
+            studentClass: '',
+            studentId: '',
+            penalty: 0,
+            teacherRefreshInterval: null
+        };
+
+        // --- DATABASE SIMULATION (Local Storage) ---
+        // Digunakan agar tab Guru dapat melihat aktivitas tab Siswa secara real-time
+        function getDB() {
+            try { return JSON.parse(localStorage.getItem('cbt_db') || '{"students":{}}'); } 
+            catch(e) { return {students:{}}; }
+        }
+        function saveDB(db) {
+            localStorage.setItem('cbt_db', JSON.stringify(db));
+        }
+        function updateStudentDB(status) {
+            if(!state.studentId) return;
+            let db = getDB();
+            if(!db.students[state.studentId]) {
+                db.students[state.studentId] = { name: state.studentName, cls: state.studentClass, penalty: 0, status: status };
+            } else {
+                db.students[state.studentId].status = status;
+                db.students[state.studentId].penalty = state.penalty;
+            }
+            saveDB(db);
+        }
+
+        // --- HELPER FUNCTIONS ---
+        function shuffleArray(array) {
+            let curId = array.length;
+            while (0 !== curId) {
+                let randId = Math.floor(Math.random() * curId);
+                curId -= 1;
+                let tmp = array[curId];
+                array[curId] = array[randId];
+                array[randId] = tmp;
+            }
+            return array;
+        }
+
+        function render() {
+            const app = document.getElementById('app');
+            app.innerHTML = '';
+            
+            if (state.view === 'home') app.appendChild(renderHome());
+            else if (state.view === 'teacher') app.appendChild(renderTeacherPortal());
+            else if (state.view === 'student_login') app.appendChild(renderStudentLogin());
+            else if (state.view === 'student_dashboard') app.appendChild(renderStudentDashboard());
+            else if (state.view === 'exam') app.appendChild(renderExam());
+            else if (state.view === 'cheated') app.appendChild(renderCheated());
+            else if (state.view === 'result') app.appendChild(renderResult());
+        }
+
+        // --- COMPONENT RENDERING ---
+
+        // 1. Home / Portal Selection
+        function renderHome() {
+            const div = document.createElement('div');
+            div.className = "flex flex-col items-center justify-center h-full space-y-6 bg-gradient-to-b from-blue-50 to-white";
+            div.innerHTML = `
+                <div class="text-center">
+                    <h1 class="text-3xl font-bold text-blue-800 mb-2">Sistem Ujian CBT</h1>
+                    <p class="text-gray-600">Bioteknologi Konvensional - Keamanan Tingkat Tinggi</p>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-4 w-full max-w-md px-4">
+                    <button onclick="changeView('student_login')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg transition-transform transform hover:scale-105">
+                        <span class="block text-2xl mb-1">👨‍🎓</span> Masuk Siswa
+                    </button>
+                    <button onclick="changeView('teacher')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg transition-transform transform hover:scale-105">
+                        <span class="block text-2xl mb-1">👨‍🏫</span> Portal Guru
+                    </button>
+                </div>
+            `;
+            return div;
+        }
+
+        // 1.5 Student Login (Input Identitas)
+        function renderStudentLogin() {
+            const div = document.createElement('div');
+            div.className = "flex flex-col items-center justify-center h-full p-4 bg-gray-50";
+            div.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Identitas Peserta Ujian</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Nama Lengkap</label>
+                            <input type="text" id="login-name" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Masukkan Nama Anda">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Kelas</label>
+                            <input type="text" id="login-class" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Contoh: XII MIPA 1">
+                        </div>
+                        <button onclick="processLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow mt-4">Simpan Identitas</button>
+                        <button onclick="changeView('home')" class="w-full mt-2 text-sm text-gray-500 hover:text-gray-800 py-2">Kembali ke Beranda</button>
+                    </div>
+                </div>
+            `;
+            return div;
+        }
+
+        function processLogin() {
+            const name = document.getElementById('login-name').value.trim();
+            const cls = document.getElementById('login-class').value.trim();
+            if(!name || !cls) {
+                alert("Harap isi Nama dan Kelas terlebih dahulu!");
+                return;
+            }
+            state.studentName = name;
+            state.studentClass = cls;
+            // Generate unique ID based on name and class
+            state.studentId = name.toLowerCase().replace(/\\s+/g, '_') + '_' + cls.toLowerCase().replace(/\\s+/g, '_');
+            state.penalty = 0; // Reset penalty
+            
+            updateStudentDB('Menunggu Ujian');
+            changeView('student_dashboard');
+        }
+
+        // 2. Teacher Portal
+        function renderTeacherPortal() {
+            const div = document.createElement('div');
+            div.className = "flex flex-col h-full w-full max-w-5xl mx-auto p-4 md:p-8";
+            
+            let db = getDB();
+            let studentList = Object.values(db.students);
+            
+            // Generate table rows based on student data
+            let tableRows = studentList.length === 0 ? `<tr><td colspan="4" class="text-center p-6 text-gray-500 italic">Belum ada siswa yang login ke dalam sistem.</td></tr>` : 
+                studentList.map(s => `
+                    <tr class="border-b hover:bg-gray-50 transition-colors">
+                        <td class="p-4 font-semibold text-gray-800">${s.name}</td>
+                        <td class="p-4 text-gray-600">${s.cls}</td>
+                        <td class="p-4">
+                            <span class="px-3 py-1 rounded-full text-xs font-bold shadow-sm ${s.status.includes('Melanggar') ? 'bg-red-500 text-white animate-pulse' : (s.status.includes('Selesai') ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700')}">
+                                ${s.status}
+                            </span>
+                        </td>
+                        <td class="p-4 font-bold text-red-600 text-lg">-${s.penalty} Poin</td>
+                    </tr>
+                `).join('');
+
+            div.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-xl p-6 w-full flex-1 flex flex-col overflow-hidden border-t-4 border-emerald-500">
+                    <div class="flex justify-between items-center mb-6 border-b pb-4">
+                        <h2 class="text-2xl font-bold text-gray-800">Dashboard Pengawas Ujian</h2>
+                        <button onclick="changeView('home')" class="bg-red-50 hover:text-red-600 text-red-400 font-semibold px-4 py-2 rounded-lg transition-colors border border-red-100">Tutup Portal</button>
+                    </div>
+                    
+                    <div class="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-xl mb-6 shrink-0 shadow-sm">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-xl">🛡️</span> <h3 class="font-bold">Log Aktivitas Real-Time</h3>
+                        </div>
+                        <p class="text-sm text-blue-700">Tabel di bawah akan terbarui otomatis setiap 2 detik. Jika ada siswa yang membuka tab/aplikasi lain, statusnya akan berubah merah dan poinnya dikurangi otomatis.</p>
+                        <p class="text-sm font-bold mt-3 bg-white inline-block px-3 py-1.5 rounded-lg text-blue-900 border border-blue-100 shadow-sm">PIN Buka Kunci Siswa: <span class="tracking-widest ml-1 text-blue-600">1234</span></p>
+                    </div>
+
+                    <h3 class="font-bold text-gray-700 mb-3 flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
+                        Monitoring Siswa Berjalan
+                    </h3>
+                    <div class="flex-1 overflow-auto border rounded-xl shadow-inner bg-gray-50">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-gray-200 sticky top-0 shadow-sm z-10">
+                                <tr>
+                                    <th class="p-4 text-gray-700 font-bold uppercase text-xs tracking-wider">Nama Peserta</th>
+                                    <th class="p-4 text-gray-700 font-bold uppercase text-xs tracking-wider">Kelas</th>
+                                    <th class="p-4 text-gray-700 font-bold uppercase text-xs tracking-wider">Status Live</th>
+                                    <th class="p-4 text-gray-700 font-bold uppercase text-xs tracking-wider">Total Penalti</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white">
+                                ${tableRows}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            return div;
+        }
+
+        // 3. Student Dashboard (Pre-Exam)
+        function renderStudentDashboard() {
+            const div = document.createElement('div');
+            div.className = "flex flex-col items-center justify-center h-full p-4 bg-gray-50";
+            div.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
+                    <div class="text-5xl mb-4">📝</div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Ujian Bioteknologi</h2>
+                    
+                    <!-- Kartu Identitas -->
+                    <div class="bg-blue-50 border border-blue-200 p-4 rounded-xl mb-4 text-left shadow-inner flex items-center gap-4">
+                        <div class="w-12 h-12 bg-blue-200 text-blue-700 rounded-full flex items-center justify-center text-xl font-bold">
+                            ${state.studentName.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 uppercase tracking-wider font-bold">Peserta</p>
+                            <p class="text-md font-bold text-blue-900">${state.studentName}</p>
+                            <p class="text-sm font-semibold text-blue-700">${state.studentClass}</p>
+                        </div>
+                    </div>
+
+                    <div class="text-left text-sm text-gray-600 mb-6 bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                        <p class="font-bold text-yellow-800 mb-1">⚠️ PERINGATAN KERAS!</p>
+                        <ul class="list-disc pl-5 space-y-1">
+                            <li class="text-red-600 font-semibold">Setiap pelanggaran (keluar layar/tab) akan memotong 20 Poin otomatis!</li>
+                            <li>Ujian terdiri dari 10 PG, 2 Uraian, dan 1 Menjodohkan.</li>
+                            <li>Waktu pengerjaan: 60 Menit.</li>
+                            <li>Identitas Anda tercatat dan dipantau langsung oleh Guru.</li>
+                        </ul>
+                    </div>
+
+                    <button onclick="startExam()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-transform transform hover:-translate-y-1 text-lg">
+                        Mulai Ujian Sekarang
+                    </button>
+                    <button onclick="changeView('student_login')" class="mt-4 text-sm text-gray-500 hover:text-gray-800">Ganti Akun (Kembali)</button>
+                </div>
+            `;
+            return div;
+        }
+
+        // Initialize Exam Data
+        function startExam() {
+            // Generate distinct, randomized questions
+            let pgPool = shuffleArray([...bankSoalPG]).slice(0, 10);
+            let essayPool = shuffleArray([...soalUraianBank]).slice(0, 2);
+            let matchData = JSON.parse(JSON.stringify(soalMenjodohkanBank)); // Deep copy
+
+            state.activeQuestions = [];
+            
+            // 1-10 PG
+            pgPool.forEach((q, i) => {
+                let options = shuffleArray([...q.options]);
+                state.activeQuestions.push({ id: i+1, type: 'pg', q: q.q, options: options, ans: q.ans });
+            });
+
+            // 11-12 Uraian
+            essayPool.forEach((q, i) => {
+                state.activeQuestions.push({ id: 11+i, type: 'uraian', q: q });
+            });
+
+            // 13 Menjodohkan
+            state.activeQuestions.push({ id: 13, type: 'menjodohkan', ...matchData });
+
+            state.answers = {};
+            state.currentIndex = 0;
+            state.timeRemaining = 3600;
+            state.examStarted = true;
+            
+            updateStudentDB('Sedang Ujian'); // Update status ke server lokal
+
+            // Start Anti Cheat Audio Context (requires user interaction to init)
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            state.audioCtx = new AudioContext();
+
+            startTimer();
+            changeView('exam');
+        }
+
+        function startTimer() {
+            clearInterval(state.timerInterval);
+            state.timerInterval = setInterval(() => {
+                if(state.view !== 'exam') return; // Pause timer UI updates if locked
+                
+                state.timeRemaining--;
+                if(state.timeRemaining <= 0) {
+                    clearInterval(state.timerInterval);
+                    forceSubmit();
+                } else {
+                    const timerEl = document.getElementById('timer-display');
+                    if(timerEl) timerEl.innerText = formatTime(state.timeRemaining);
+                }
+            }, 1000);
+        }
+
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const s = (seconds % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        // 4. Main Exam Interface
+        function renderExam() {
+            const div = document.createElement('div');
+            div.className = "flex flex-col h-full bg-gray-100";
+            
+            const q = state.activeQuestions[state.currentIndex];
+            let questionContent = '';
+
+            if (q.type === 'pg') {
+                questionContent = `
+                    <h3 class="text-lg font-semibold mb-4 text-gray-800">${q.id}. ${q.q}</h3>
+                    <div class="space-y-3">
+                        ${q.options.map((opt, i) => `
+                            <label class="flex items-center p-4 border rounded-xl cursor-pointer transition-colors ${state.answers[q.id] === opt ? 'bg-blue-100 border-blue-500' : 'bg-white hover:bg-gray-50 border-gray-200'}">
+                                <input type="radio" name="q${q.id}" value="${opt}" class="w-5 h-5 text-blue-600 focus:ring-blue-500" ${state.answers[q.id] === opt ? 'checked' : ''} onchange="saveAnswer(${q.id}, '${opt}')">
+                                <span class="ml-3 text-gray-700">${String.fromCharCode(65+i)}. ${opt}</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                `;
+            } else if (q.type === 'uraian') {
+                questionContent = `
+                    <h3 class="text-lg font-semibold mb-4 text-gray-800">${q.id}. ${q.q}</h3>
+                    <textarea class="w-full h-48 p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none" placeholder="Ketik jawaban Anda di sini..." oninput="saveAnswer(${q.id}, this.value)">${state.answers[q.id] || ''}</textarea>
+                `;
+            } else if (q.type === 'menjodohkan') {
+                questionContent = `
+                    <h3 class="text-lg font-semibold mb-4 text-gray-800">${q.id}. ${q.q}</h3>
+                    <div class="space-y-4">
+                        ${q.items.map((item, i) => {
+                            // retrieve existing answer array or init
+                            let currentAns = state.answers[q.id] || {};
+                            return `
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white border border-gray-200 rounded-xl gap-4">
+                                <span class="font-semibold text-gray-700 w-1/3">${item}</span>
+                                <select class="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" onchange="saveMatchAnswer(${q.id}, '${item}', this.value)">
+                                    <option value="">-- Pilih Pasangan --</option>
+                                    ${q.options.map(opt => `<option value="${opt}" ${currentAns[item] === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+                                </select>
+                            </div>
+                        `}).join('')}
+                    </div>
+                `;
+            }
+
+            // Generate Nav Grid
+            let navGrid = state.activeQuestions.map((question, index) => {
+                let isAnswered = false;
+                if(question.type === 'menjodohkan') {
+                    isAnswered = state.answers[question.id] && Object.keys(state.answers[question.id]).length === question.items.length;
+                } else {
+                    isAnswered = !!state.answers[question.id];
+                }
+                
+                let bgClass = "bg-white border-gray-300 text-gray-600";
+                if(index === state.currentIndex) bgClass = "bg-blue-600 text-white border-blue-600";
+                else if (isAnswered) bgClass = "bg-emerald-500 text-white border-emerald-500";
+                
+                return `<button onclick="goToQuestion(${index})" class="w-10 h-10 rounded-lg border font-bold text-sm flex items-center justify-center shadow-sm transition-transform hover:scale-105 ${bgClass}">${question.id}</button>`;
+            }).join('');
+
+            div.innerHTML = `
+                <!-- HEADER -->
+                <header class="bg-white shadow-sm px-4 py-3 flex justify-between items-center shrink-0 z-10 relative">
+                    <div class="font-bold text-blue-800 text-lg sm:text-xl">CBT Bioteknologi</div>
+                    <div class="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg font-bold border border-blue-200">
+                        ⏱ <span id="timer-display">${formatTime(state.timeRemaining)}</span>
+                    </div>
+                </header>
+
+                <!-- MAIN LAYOUT -->
+                <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
+                    
+                    <!-- KONTEN SOAL -->
+                    <main class="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto">
+                        <div class="max-w-3xl mx-auto bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
+                            <div class="mb-4 inline-block px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold uppercase tracking-wider">
+                                ${q.type === 'pg' ? 'Pilihan Ganda' : q.type === 'uraian' ? 'Uraian' : 'Menjodohkan'}
+                            </div>
+                            ${questionContent}
+                            
+                            <!-- NAVIGATION BUTTONS -->
+                            <div class="mt-8 flex justify-between items-center pt-4 border-t">
+                                <button onclick="prevQuestion()" class="px-5 py-2 rounded-lg font-semibold ${state.currentIndex > 0 ? 'bg-gray-200 hover:bg-gray-300 text-gray-800' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}" ${state.currentIndex === 0 ? 'disabled' : ''}>← Seb</button>
+                                
+                                ${state.currentIndex === state.activeQuestions.length - 1 ? 
+                                    `<button onclick="confirmSubmit()" class="px-6 py-2 rounded-lg font-bold bg-green-600 hover:bg-green-700 text-white shadow-lg">Selesai 🏁</button>` :
+                                    `<button onclick="nextQuestion()" class="px-5 py-2 rounded-lg font-semibold bg-blue-600 hover:bg-blue-700 text-white">Selanjut →</button>`
+                                }
+                            </div>
+                        </div>
+                    </main>
+
+                    <!-- SIDEBAR NAVIGASI SOAL -->
+                    <aside class="w-full md:w-80 bg-white border-l border-gray-200 shrink-0 flex flex-col h-48 md:h-full">
+                        <div class="p-4 border-b bg-gray-50">
+                            <h3 class="font-bold text-gray-700 text-center">Navigasi Soal</h3>
+                        </div>
+                        <div class="flex-1 overflow-y-auto p-4">
+                            <div class="grid grid-cols-5 md:grid-cols-4 gap-2 place-items-center">
+                                ${navGrid}
+                            </div>
+                        </div>
+                        <div class="p-4 border-t">
+                            <button onclick="confirmSubmit()" class="w-full py-3 bg-gray-800 hover:bg-gray-900 text-white font-bold rounded-xl text-sm transition-colors">Selesai Ujian Akhiri</button>
+                        </div>
+                    </aside>
+                </div>
+            `;
+            return div;
+        }
+
+        // 5. Cheated / Locked Screen (Jumpscare)
+        function renderCheated() {
+            const div = document.createElement('div');
+            div.className = "jumpscare-bg flex flex-col items-center justify-center h-full w-full fixed top-0 left-0 z-50 text-white p-4 overflow-hidden";
+            div.innerHTML = `
+                <!-- Spooky SVG Hantu -->
+                <svg class="jumpscare-img w-64 h-64 md:w-96 md:h-96 mb-6" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="50" cy="50" r="45" fill="black" stroke="red" stroke-width="2"/>
+                    <!-- Eyes -->
+                    <ellipse cx="35" cy="40" rx="10" ry="15" fill="red"/>
+                    <ellipse cx="65" cy="40" rx="10" ry="15" fill="red"/>
+                    <circle cx="35" cy="40" r="3" fill="black"/>
+                    <circle cx="65" cy="40" r="3" fill="black"/>
+                    <!-- Mouth (Scream) -->
+                    <ellipse cx="50" cy="75" rx="15" ry="10" fill="red"/>
+                    <path d="M 35 75 Q 50 65 65 75 Q 50 85 35 75" fill="black"/>
+                </svg>
+                
+                <h1 class="text-4xl md:text-6xl font-black text-red-600 mb-2 text-center drop-shadow-[0_0_10px_rgba(255,0,0,1)] tracking-widest">PELANGGARAN!</h1>
+                <p class="text-xl md:text-2xl text-red-200 font-bold text-center mb-8 bg-black bg-opacity-50 p-2 rounded">Anda terdeteksi keluar dari aplikasi / mencontek.</p>
+                
+                <div class="bg-black border-2 border-red-800 p-6 rounded-xl max-w-sm w-full text-center relative z-10 shadow-[0_0_30px_red]">
+                    <p class="text-gray-300 mb-4 font-semibold text-sm">Panggil Guru Pengawas untuk mematikan alarm dan membuka kunci.</p>
+                    <input type="password" id="teacher-pin" placeholder="PIN Guru" class="w-full text-center p-3 rounded bg-gray-900 border border-red-700 text-white text-xl font-bold tracking-widest focus:outline-none focus:border-red-500 mb-4">
+                    <button onclick="unlockExam()" class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3 rounded uppercase tracking-wider transition-colors">Buka Kunci</button>
+                    <p id="pin-error" class="text-red-500 text-sm mt-2 hidden">PIN SALAH!</p>
+                </div>
+            `;
+            return div;
+        }
+
+        // 6. Result Screen
+        function renderResult() {
+            const div = document.createElement('div');
+            div.className = "flex flex-col items-center justify-center h-full p-4 bg-gray-50";
+            
+            // Calculate PG Score (10 points per correct answer)
+            let pgScore = 0;
+            state.activeQuestions.forEach(q => {
+                if(q.type === 'pg' && state.answers[q.id] === q.ans) pgScore++;
+            });
+            
+            let baseScore = pgScore * 10;
+            let finalScore = baseScore - state.penalty;
+            if(finalScore < 0) finalScore = 0; // Prevent negative scores
+
+            div.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center border-t-8 border-green-500">
+                    <div class="text-6xl mb-4">✅</div>
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Ujian Selesai!</h2>
+                    <p class="text-gray-600 mb-6">Terima kasih <span class="font-bold">${state.studentName}</span>, jawaban Anda telah tersimpan.</p>
+                    
+                    <div class="bg-gray-50 border border-gray-200 p-5 rounded-xl mb-6 text-left">
+                        <p class="text-sm font-bold text-gray-700 border-b pb-2 mb-3 uppercase tracking-wider">Ringkasan Nilai PG</p>
+                        
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm text-gray-600">Jawaban Benar:</span>
+                            <span class="font-bold text-gray-800">${pgScore} / 10 Soal</span>
+                        </div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm text-gray-600">Nilai Dasar PG:</span>
+                            <span class="font-bold text-blue-600">${baseScore}</span>
+                        </div>
+                        <div class="flex justify-between items-center mb-3 border-b pb-3">
+                            <span class="text-sm font-semibold text-red-500">Penalti Pelanggaran:</span>
+                            <span class="font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded">-${state.penalty} Poin</span>
+                        </div>
+                        <div class="flex justify-between items-center text-lg mt-2">
+                            <span class="font-black text-gray-900">Total Nilai PG:</span>
+                            <span class="font-black text-3xl ${finalScore >= 70 ? 'text-green-600' : 'text-red-600'}">${finalScore}</span>
+                        </div>
+                        
+                        <div class="mt-4 p-3 bg-blue-50 text-blue-800 text-xs rounded-lg border border-blue-100">
+                            *Catatan: Nilai soal Uraian dan Menjodohkan akan ditambahkan secara manual oleh guru pengawas Anda.
+                        </div>
+                    </div>
+
+                    <button onclick="changeView('home')" class="w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-4 rounded-xl shadow transition-colors">
+                        Kembali ke Beranda Awal
+                    </button>
+                </div>
+            `;
+            return div;
+        }
+
+
+        // --- LOGIC FUNCTIONS ---
+        function changeView(newView) {
+            state.view = newView;
+            if(newView === 'home') {
+                state.examStarted = false;
+                clearInterval(state.timerInterval);
+                stopAlarm();
+            }
+            
+            // Auto refresh mechanism untuk Portal Guru setiap 2 detik
+            clearInterval(state.teacherRefreshInterval);
+            if(newView === 'teacher') {
+                state.teacherRefreshInterval = setInterval(() => {
+                    if(state.view === 'teacher') render();
+                }, 2000);
+            }
+            
+            render();
+        }
+
+        function saveAnswer(id, val) {
+            state.answers[id] = val;
+            render(); // Re-render to update nav grid colors and checked states
+        }
+
+        function saveMatchAnswer(questionId, item, matchedValue) {
+            if(!state.answers[questionId]) state.answers[questionId] = {};
+            if(matchedValue === "") {
+                delete state.answers[questionId][item];
+            } else {
+                state.answers[questionId][item] = matchedValue;
+            }
+            render();
+        }
+
+        function goToQuestion(index) {
+            state.currentIndex = index;
+            render();
+        }
+
+        function nextQuestion() {
+            if (state.currentIndex < state.activeQuestions.length - 1) {
+                state.currentIndex++;
+                render();
+            }
+        }
+
+        function prevQuestion() {
+            if (state.currentIndex > 0) {
+                state.currentIndex--;
+                render();
+            }
+        }
+
+        function confirmSubmit() {
+            if(confirm("Apakah Anda yakin ingin menyelesaikan ujian? Jawaban tidak dapat diubah lagi.")) {
+                forceSubmit();
+            }
+        }
+
+        function forceSubmit() {
+            clearInterval(state.timerInterval);
+            state.examStarted = false;
+            stopAlarm(); // Just in case
+            updateStudentDB('Selesai Ujian');
+            changeView('result');
+        }
+
+        // --- ANTI CHEAT SYSTEM (POU / GHOST) ---
+        
+        // Detect leaving page (Visibility API)
+        document.addEventListener("visibilitychange", () => {
+            if (state.examStarted && document.visibilityState === 'hidden' && state.view === 'exam') {
+                triggerCheatAlarm();
+            }
+        });
+
+        // Also detect blur window
+        window.addEventListener('blur', () => {
+            if (state.examStarted && state.view === 'exam') {
+                triggerCheatAlarm();
+            }
+        });
+
+        function triggerCheatAlarm() {
+            if(state.view === 'cheated') return; // Already locked
+            
+            // Hukuman Poin Otomatis
+            state.penalty += 20; 
+            updateStudentDB('!!! MELANGGAR (MENCONTEK) !!!');
+            
+            state.view = 'cheated';
+            render();
+            playAnnoyingAlarm();
+            
+            // Try to force full screen (Might be blocked by browser without user click, but we try)
+            try {
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen().catch(err => console.log(err));
+                }
+            } catch(e){}
+        }
+
+        function unlockExam() {
+            const pin = document.getElementById('teacher-pin').value;
+            const error = document.getElementById('pin-error');
+            
+            if (pin === "1234") {
+                stopAlarm();
+                updateStudentDB('Sedang Ujian (Terbuka Kunci)'); // Kembalikan status
+                state.view = 'exam';
+                // Exit fullscreen if possible
+                try {
+                    if (document.fullscreenElement) {
+                        document.exitFullscreen().catch(err => console.log(err));
+                    }
+                } catch(e){}
+                render();
+            } else {
+                error.classList.remove('hidden');
+                document.getElementById('teacher-pin').value = '';
+                document.getElementById('teacher-pin').focus();
+            }
+        }
+
+        function playAnnoyingAlarm() {
+            if(!state.audioCtx) return;
+            if(state.audioCtx.state === 'suspended') state.audioCtx.resume();
+            
+            // Create a discordant, oscillating synth mimicking a creepy screaming/video game glitch sound (Pou style simulation)
+            const duration = 2; // loops every 2s
+            
+            const createSiren = (freq1, freq2) => {
+                const osc = state.audioCtx.createOscillator();
+                const gainNode = state.audioCtx.createGain();
+                
+                osc.type = 'sawtooth';
+                
+                // Modulate frequency to create an alarm/scream effect
+                osc.frequency.setValueAtTime(freq1, state.audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(freq2, state.audioCtx.currentTime + (duration/2));
+                osc.frequency.exponentialRampToValueAtTime(freq1, state.audioCtx.currentTime + duration);
+                
+                // Volume modulation
+                gainNode.gain.setValueAtTime(0.5, state.audioCtx.currentTime);
+                
+                osc.connect(gainNode);
+                gainNode.connect(state.audioCtx.destination);
+                
+                osc.start();
+                return { osc, gainNode };
+            };
+
+            // Two detuned oscillators for maximum annoyance
+            const siren1 = createSiren(800, 1500);
+            const siren2 = createSiren(820, 1520);
+            
+            state.alarmOscillators.push(siren1, siren2);
+            
+            // Interval to keep resetting the modulation for a continuous siren loop
+            state.sirenInterval = setInterval(() => {
+                if(state.audioCtx.state === 'suspended') return;
+                state.alarmOscillators.forEach(s => {
+                    const baseF = s.osc.frequency.value;
+                    s.osc.frequency.cancelScheduledValues(state.audioCtx.currentTime);
+                    s.osc.frequency.setValueAtTime(baseF < 1000 ? 800 : 1500, state.audioCtx.currentTime);
+                    s.osc.frequency.exponentialRampToValueAtTime(baseF < 1000 ? 1500 : 800, state.audioCtx.currentTime + (duration/2));
+                    s.osc.frequency.exponentialRampToValueAtTime(baseF < 1000 ? 800 : 1500, state.audioCtx.currentTime + duration);
+                });
+            }, duration * 1000);
+        }
+
+        function stopAlarm() {
+            state.alarmOscillators.forEach(s => {
+                try { s.osc.stop(); s.osc.disconnect(); } catch(e){}
+            });
+            state.alarmOscillators = [];
+            clearInterval(state.sirenInterval);
+        }
+
+        // Initialize App
+        window.onload = () => {
+            render();
+        };
+
+    </script>
+</body>
+</html>
